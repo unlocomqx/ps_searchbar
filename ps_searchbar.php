@@ -24,59 +24,65 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-if (!defined('_PS_VERSION_'))
-	exit;
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
 
 class Ps_Searchbar extends Module implements WidgetInterface
 {
-	public function __construct()
-	{
-		$this->name = 'ps_searchbar';
-		$this->tab = 'search_filter';
-		$this->version = '1.0.0';
-		$this->author = 'PrestaShop';
-		$this->need_instance = 0;
+    private $templateFile;
 
-		parent::__construct();
+    public function __construct()
+    {
+        $this->name = 'ps_searchbar';
+        $this->author = 'PrestaShop';
+        $this->version = '1.0.5';
+        $this->need_instance = 0;
 
-		$this->displayName = $this->l('Search bar');
-		$this->description = $this->l('Adds a quick search field to your website.');
-		$this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
-	}
+        parent::__construct();
 
-	public function install()
-	{
-		return parent::install() && $this->registerHook('top') && $this->registerHook('displaySearch') && $this->registerHook('header');
-	}
+        $this->displayName = $this->l('Search bar');
+        $this->description = $this->l('Adds a quick search field to your website.');
 
-	public function getWidgetVariables($hookName, array $configuration = [])
-	{
-		$widgetVariables = [
-			'search_controller_url' => $this->context->link->getPageLink('search')
-		];
+        $this->ps_versions_compliancy = array('min' => '1.7.0.0', 'max' => _PS_VERSION_);
 
-		if (!array_key_exists(
-			'search_string',
-			$this->context->smarty->getTemplateVars()
-		)) {
-			$widgetVariables['search_string'] = '';
-		}
-		return $widgetVariables;
-	}
+        $this->templateFile = 'module:ps_searchbar/ps_searchbar.tpl';
+    }
 
-	public function renderWidget($hookName, array $configuration = [])
-	{
-		$this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
-		return $this->display(__FILE__, 'ps_searchbar.tpl');
-	}
+    public function install()
+    {
+        return parent::install()
+            && $this->registerHook('top')
+            && $this->registerHook('displaySearch')
+            && $this->registerHook('header')
+        ;
+    }
 
-	public function hookHeader()
-	{
-		$this->context->controller->addJqueryUI('ui.autocomplete');
-		$this->context->controller->addJS(
-			$this->_path . 'ps_searchbar.js'
-		);
-	}
+    public function hookHeader()
+    {
+        $this->context->controller->addJqueryUI('ui.autocomplete');
+        $this->context->controller->registerJavascript('modules-searchbar', 'modules/'.$this->name.'/ps_searchbar.js', ['position' => 'bottom', 'priority' => 150]);
+    }
+
+    public function getWidgetVariables($hookName, array $configuration = [])
+    {
+        $widgetVariables = array(
+            'search_controller_url' => $this->context->link->getPageLink('search'),
+        );
+
+        if (!array_key_exists('search_string', $this->context->smarty->getTemplateVars())) {
+            $widgetVariables['search_string'] = '';
+        }
+
+        return $widgetVariables;
+    }
+
+    public function renderWidget($hookName, array $configuration = [])
+    {
+        $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
+
+        return $this->fetch($this->templateFile);
+    }
 }
